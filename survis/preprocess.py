@@ -1,10 +1,16 @@
 # Preprocesses the gadget data into a useful format
+# Contains the object DataGridder which does the heavy lifting with
+# the function bin_data which iterates through the supplied file.
+# This data can then be visualised (see test() for an example).
 
 import h5py
 import numpy as np
 
 def test():
+    # Plots a few things with the example data
+
     import matplotlib.pyplot as plt
+
     fname = "test_data.hdf5"
     res = 50
     DG = DataGridder(fname, res, res, -100, 100, -100, 100)
@@ -25,6 +31,11 @@ def test():
     plt.title('Gas velocity')
     g.show()
 
+    h = plt.figure(3)
+    gas_d = np.reshape(DG.mean_gas_d_arr, (res, res))
+    plt.imshow(gas_d)
+    plt.title('Gas density')
+    h.show()
     input()  # keep figures alive
 
     return
@@ -45,8 +56,11 @@ class DataGridder(object):
 
         self.header, self.gas, self.star = self.read_data()
         self.extract_header()
-        self.gas_id_arr, self.gas_vel_arr, self.gas_mass_arr = self.bin_data(self.gas, self.gas_mass)
+
+        self.gas_id_arr, self.gas_vel_arr, self.gas_mass_arr, self.gas_d_arr = self.bin_data(self.gas, self.gas_mass, True)
+
         self.mean_gas_vel_arr = self.mean_grid(self.gas_vel_arr)
+        self.mean_gas_d_arr = self.mean_grid(self.gas_d_arr)
 
         return
 
@@ -84,15 +98,19 @@ class DataGridder(object):
         return [(sum(x)/len(x)) if len(x) > 0 else 0. for x in grid]
 
 
-    def bin_data(self, raw_data, part_mass):
+    def bin_data(self, raw_data, part_mass, hydro=True):
         # raw_data is e.g. GADGET['PartType0'].
         # grids are left as flat lists for efficiency
         # vel_grid returns v/r for each **particle** in a similar way to
         # id_grid, use mean_grid to bin fully
+        # if(hyrdo) we also bin and return density (pressure)
 
         id_grid = [[] for x in range((self.binsx*self.binsy))]
         vel_grid = [[] for x in range((self.binsx*self.binsy))]
         mass_arr = np.zeros(self.binsx*self.binsy)
+
+        if (hydro):
+            d_grid = [[] for x in range((self.binsx*self.binsy))]
 
         n_particles = len(raw_data['Coordinates'])
 
@@ -100,6 +118,9 @@ class DataGridder(object):
         ids = raw_data['ParticleIDs']
         vels = raw_data['Velocities']
         radiis = self.radii(coords)
+
+        if (hydro):
+            density = raw_data['Density']
 
         binsize_x = (self.xmax - self.xmin)/(self.binsx)
         binsize_y = (self.ymax - self.ymin)/(self.binsy)
@@ -117,7 +138,14 @@ class DataGridder(object):
                 id_grid[this_bin].append(ids[particle])
                 vel_grid[this_bin].append(self.rms(vels[particle])/radiis[particle])
                 mass_arr[this_bin] += part_mass
+
+                if (hydro):
+                    d_grid[this_bin].append(density[particle])
+
             else:
                 pass  # The particle does not lie within the range
 
-        return id_grid, vel_grid, mass_arr
+        if (hydro):
+            return id_grid, vel_grid, mass_arr, d_grid
+        else:
+            return id_grid, vel_grid, mass_arr
