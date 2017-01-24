@@ -24,8 +24,11 @@ class DataGridder(object):
         self.extract_header()
 
         self.gas_id_arr, self.gas_vel_arr, self.gas_mass_arr, self.gas_d_arr = self.bin_data(self.gas, self.gas_mass, True)
+        self.star_id_arr, self.star_vel_arr, self.star_mass_arr = self.bin_data(self.star, self.star_mass, False)
 
         self.mean_gas_vel_arr = self.mean_grid(self.gas_vel_arr)
+        self.mean_star_vel_arr = self.mean_grid(self.star_vel_arr)
+        
         self.mean_gas_d_arr = self.mean_grid(self.gas_d_arr)
 
         return
@@ -102,7 +105,7 @@ class DataGridder(object):
 
                 # Now we do the processing for this particle
                 id_grid[this_bin].append(ids[particle])
-                vel_grid[this_bin].append(self.rms(vels[particle])/radiis[particle])
+                vel_grid[this_bin].append((self.rms(vels[particle])/radiis[particle])/(3.086e16))
                 mass_arr[this_bin] += part_mass
 
                 if (hydro):

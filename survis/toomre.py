@@ -12,8 +12,9 @@ def sound_speed(density):
     return original * 0.001 # km/s
 
 
-def Q_gas(sound_speed, kappa, density, surface_density, G=4.302e-3):
-    # G given in pc/psun kms^2
+def Q_gas(sound_speed, kappa, density, surface_density, G=4.302e-6):
+    # G given in kpc/msun kms^2
     c_s = sound_speed(density)
 
-    return (c_s * kappa)/(np.pi * G * surface_density)
+    # our surface density is given in msun/kpc^2 so we need a conversion factor
+    return 3.086e16 * ((c_s * kappa)/(np.pi * G * surface_density))

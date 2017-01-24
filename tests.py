@@ -1,4 +1,5 @@
 import survis.preprocess as pre
+import survis.toomre as toom
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -30,6 +31,15 @@ gas_d = np.reshape(DG.mean_gas_d_arr, (res, res))
 plt.imshow(gas_d)
 plt.title('Gas density')
 h.show()
+
+print("Running toomre.py tests")
+
+i = plt.figure(4)
+star_sd = np.reshape(DG.star_mass_arr, (res, res))
+gas_Q = toom.Q_gas(toom.sound_speed, gas_v, gas_d, gas_sd + star_sd)
+plt.imshow(gas_Q)
+plt.title('Gas Q')
+plt.colorbar()
+i.show()
+
 input()  # keep figures alive
-
-
