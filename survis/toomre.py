@@ -8,10 +8,12 @@ def sound_speed(density):
     R = 8.314
     M = 0.001
     T = 1e4
-    return np.ones_like(density) * np.sqrt((gamma * R * T)/(M)) # m/s
+    original = np.ones_like(density) * np.sqrt((gamma * R * T)/(M)) # m/s
+    return original * 0.001 # km/s
 
 
-def Q_gas(sound_speed, kappa, density, surface_density, G):
+def Q_gas(sound_speed, kappa, density, surface_density, G=4.302e-3):
+    # G given in pc/psun kms^2
     c_s = sound_speed(density)
 
     return (c_s * kappa)/(np.pi * G * surface_density)
