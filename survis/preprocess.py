@@ -6,13 +6,14 @@ import numpy as np
 def test():
     import matplotlib.pyplot as plt
     fname = "test_data.hdf5"
-    DG = DataGridder(fname, 25, 25, -100, 100, -100, 100)
+    res = 50
+    DG = DataGridder(fname, res, res, -100, 100, -100, 100)
 
     print("Star Particle Attrs: {}".format([x for x in DG.star.keys()]))
     print("Gass Mass: {}; Star Mass: {}".format(DG.gas_mass, DG.star_mass))
 
     # Now we vis!
-    gas_sd = np.reshape(DG.gas_mass_arr, (25, 25))
+    gas_sd = np.reshape(DG.gas_mass_arr, (res, res))
     plt.imshow(gas_sd)
     plt.show()
 
@@ -21,6 +22,8 @@ def test():
 
 class DataGridder(object):
     def __init__(self, fname, binsx, binsy, xmin, xmax, ymin, ymax):
+        # note that binsx and binsy should be similar to the smoothing
+        # lengh used in the simulation.
         self.fname = fname
 
         self.binsx = binsx
