@@ -17,6 +17,10 @@ def test():
     plt.imshow(gas_sd)
     plt.show()
 
+    gas_v = np.reshape(DG.mean_gas_vel_arr, (res, res))
+    plt.imshow(gas_sd)
+    plt.show()
+
     return
 
 
@@ -35,7 +39,8 @@ class DataGridder(object):
 
         self.header, self.gas, self.star = self.read_data()
         self.extract_header()
-        self.gas_id_arr, self.gas_mass_arr = self.bin_data(self.gas, self.gas_mass)
+        self.gas_id_arr, self.gas_vel_arr, self.gas_mass_arr = self.bin_data(self.gas, self.gas_mass)
+        self.mean_gas_vel_arr = self.mean_grid(self.gas_vel_arr)
 
         return
 
@@ -58,16 +63,34 @@ class DataGridder(object):
         return self.time, self.box_size, self.gas_mass, self.star_mass
 
 
+    def radii(self, coords):
+        # Takes the coordinates and returns the radii
+        return np.sqrt(coords[:, 0]**2 + coords[:, 1]**2 + coords[:, 2]**2)
+
+
+    def rms(self, item):
+        return np.sqrt(np.mean(np.square(item)))
+
+
+    def mean_grid(self, grid):
+        # Takes a grid (well, a flattened one, such as id_grid) and means
+        # it across the list
+        return [(sum(x)/len(x)) if len(x) > 0 else 0. for x in grid]
+
+
     def bin_data(self, raw_data, part_mass):
         # raw_data is e.g. GADGET['PartType0'].
         # grids are left as flat lists for efficiency
         id_grid = [[] for x in range((self.binsx*self.binsy))]
+        vel_grid = [[] for x in range((self.binsx*self.binsy))]
         mass_arr = np.zeros(self.binsx*self.binsy)
 
         n_particles = len(raw_data['Coordinates'])
 
         coords = raw_data['Coordinates']
         ids = raw_data['ParticleIDs']
+        vels = raw_data['Velocities']
+        radiis = self.radii(coords)
 
         binsize_x = (self.xmax - self.xmin)/(self.binsx)
         binsize_y = (self.ymax - self.ymin)/(self.binsy)
@@ -83,8 +106,9 @@ class DataGridder(object):
 
                 # Now we do the processing for this particle
                 id_grid[this_bin].append(ids[particle])
+                vel_grid[this_bin].append(self.rms(vels[particle])/radiis[particle])
                 mass_arr[this_bin] += part_mass
             else:
                 pass  # The particle does not lie within the range
 
-        return id_grid, mass_arr
+        return id_grid, vel_grid, mass_arr
