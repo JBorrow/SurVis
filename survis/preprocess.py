@@ -13,13 +13,19 @@ def test():
     print("Gass Mass: {}; Star Mass: {}".format(DG.gas_mass, DG.star_mass))
 
     # Now we vis!
+    f = plt.figure(1)
     gas_sd = np.reshape(DG.gas_mass_arr, (res, res))
     plt.imshow(gas_sd)
-    plt.show()
+    plt.title('Gas mass')
+    f.show()
 
+    g = plt.figure(2)
     gas_v = np.reshape(DG.mean_gas_vel_arr, (res, res))
-    plt.imshow(gas_sd)
-    plt.show()
+    plt.imshow(gas_v)
+    plt.title('Gas velocity')
+    g.show()
+
+    input()  # keep figures alive
 
     return
 
@@ -81,6 +87,9 @@ class DataGridder(object):
     def bin_data(self, raw_data, part_mass):
         # raw_data is e.g. GADGET['PartType0'].
         # grids are left as flat lists for efficiency
+        # vel_grid returns v/r for each **particle** in a similar way to
+        # id_grid, use mean_grid to bin fully
+
         id_grid = [[] for x in range((self.binsx*self.binsy))]
         vel_grid = [[] for x in range((self.binsx*self.binsy))]
         mass_arr = np.zeros(self.binsx*self.binsy)
