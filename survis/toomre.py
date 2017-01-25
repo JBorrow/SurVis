@@ -18,3 +18,7 @@ def Q_gas(sound_speed, kappa, density, surface_density, G=4.302e-6):
 
     # our surface density is given in msun/kpc^2 so we need a conversion factor
     return 3.086e16 * ((c_s * kappa)/(np.pi * G * surface_density))
+
+
+def Q_star()
+    return
