@@ -20,5 +20,5 @@ def Q_gas(sound_speed, kappa, density, surface_density, G=4.302e-6):
     return 3.086e16 * ((c_s * kappa)/(np.pi * G * surface_density))
 
 
-def Q_star()
+def Q_star():
     return
