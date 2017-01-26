@@ -15,9 +15,11 @@ def sound_speed(density):
 def Q_gas(sound_speed, kappa, density, surface_density, G=4.302e-6):
     # G given in kpc/msun kms^2
     c_s = sound_speed(density)
+    c_s[surface_density == 0] = 0
+    sd_masked = surface_density + (surface_density == 0)
 
     # our surface density is given in msun/kpc^2 so we need a conversion factor
-    return 3.086e16 * ((c_s * kappa)/(np.pi * G * surface_density))
+    return 3.086e16 * ((c_s * kappa)/(np.pi * G * sd_masked))
 
 
 def Q_star():
