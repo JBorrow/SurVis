@@ -34,25 +34,7 @@ class DataGridder(object):
         f = h5py.File(self.fname, 'r')
 
         # Header, gas, stars
-        return f['Header'], self.clean_data(f['PartType0'], True), self.clean_data(f['PartType4'])
-
-
-    def clean_data(self, data, hydro=False):
-        # retrns the gadget data in an iteratable *BY PARTICLE* format
-        n_particles = len(data['Coordinates'])
-
-        if (hydro):
-            ret = np.array([data['Coordinates'],
-                            data['Velocities'],
-                            data['ParticleIDs'],
-                            data['Density']])
-
-        else:
-            ret = np.array([data['Coordinates'],
-                            data['Velocities'],
-                            data['ParticleIDs']])
-
-        return ret.T
+        return f['Header'], f['PartType0'], f['PartType4']
 
 
     def extract_header(self):
@@ -80,7 +62,7 @@ class DataGridder(object):
         return [(sum(x)/len(x)) if len(x) > 0 else 0. for x in grid]
 
 
-    def bin_data(self, raw_data, part_mass, hydro=True, ids=False):
+    def bin_data(self, data, part_mass, hydro=True, ids=False):
         # raw_data is e.g. GADGET['PartType0'].
         # grids are left as flat lists for efficiency
         # vel_grid returns v/r for each **particle** in a similar way to
@@ -88,39 +70,45 @@ class DataGridder(object):
         # if(hyrdo) we also bin and return density (pressure)
         # if (ids) we give a list of ids per bin (warning:SLOW)
 
-        vel_arr = np.zeros(self.binsx*self.binsy)
-        n_arr = np.zeros(self.binsx*self.binsy)
+        vel_arr = np.zeros((self.binsx, self.binsy))
+        n_arr = np.zeros((self.binsx, self.binsy))
 
         if (ids):
             id_grid = [[] for x in range((self.binsx*self.binsy))]
 
         if (hydro):
-            d_arr = np.zeros(self.binsx*self.binsy)
+            d_arr = np.zeros((self.binsx, self.binsy))
 
-        n_particles = len(raw_data)
+        n_particles = len(data['Coordinates'])
 
         binsize_x = (self.xmax - self.xmin)/(self.binsx)
         binsize_y = (self.ymax - self.ymin)/(self.binsy)
 
-        for particle in raw_data:
-            binx = int(np.floor((particle[0][0] - self.xmin)/binsize_x))
-            biny = int(np.floor((particle[0][1] - self.ymin)/binsize_y))
+        binsx = np.floor((data['Coordinates'][:, 0] - self.xmin)/binsize_x).astype(int)
+        binsy = np.floor((data['Coordinates'][:, 1] - self.ymin)/binsize_y).astype(int)
 
-            # todo: this should really be done in a preprocessing loop
-            if ((binx > 0) and (biny > 0) and (binx < self.binsx) and (biny < self.binsy)):
-                this_bin = binx + self.binsx*biny
+        vels = np.sqrt(np.mean(np.square(data['Velocities'][()]), 1)/np.sum(np.square(data['Coordinates'][()]), 1))
+        
+        if (ids):
+            print("WARNING: The ID feature is not implemented")
 
-                n_arr[this_bin] += 1
-                vel_arr[this_bin] += (self.rms(particle[1])/self.radii(particle[1]))/(3.086e16)
-                
-                if (ids):
-                    id_grid[this_bin].append(particle[2])
-
-                if (hydro):
-                    d_arr[this_bin] += particle[3]
-
-            else:
-                pass  # The particle does not lie within the range
+        if(hydro):
+            for v, bx, by, rho in zip(vels, binsx, binsy, data['Density']):
+                try:
+                    vel_arr[bx, by] += v
+                    d_arr[bx, by] += rho
+                    n_arr[bx, by] += 1
+                except IndexError:
+                    # Particle out of range, ignore
+                    pass
+        else:
+            for v, bx, by in zip(vels, binsx, binsy):
+                try:
+                    vel_arr[bx, by] += v
+                    n_arr[bx, by] += 1
+                except IndexError:
+                    # Particle out of range, ignore
+                    pass
 
         # Tidy up
         
@@ -132,7 +120,6 @@ class DataGridder(object):
         
         if (hydro):
             d_arr = d_arr/n_arr
-
         
         ret = {'masses' : m_arr,
                'velocities' : vel_arr,}
