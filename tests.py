@@ -10,24 +10,23 @@ fname = "test_data.hdf5"
 res = 50
 DG = pre.DataGridder(fname, res, res, -100, 100, -100, 100)
 
-print("Star Particle Attrs: {}".format([x for x in DG.star.keys()]))
 print("Gass Mass: {}; Star Mass: {}".format(DG.gas_mass, DG.star_mass))
 
 # Now we vis!
 f = plt.figure(1)
-gas_sd = np.reshape(DG.gas_data['masses'], (res, res))
+gas_sd = DG.gas_data['masses']
 plt.imshow(gas_sd)
 plt.title('Gas mass')
 f.show()
 
 g = plt.figure(2)
-gas_v = np.reshape(DG.gas_data['velocities'], (res, res))
+gas_v = DG.gas_data['velocities']
 plt.imshow(gas_v)
 plt.title('Gas velocity')
 g.show()
 
 h = plt.figure(3)
-gas_d = np.reshape(DG.gas_data['densities'], (res, res))
+gas_d = DG.gas_data['densities']
 plt.imshow(gas_d)
 plt.title('Gas density')
 h.show()
@@ -35,7 +34,7 @@ h.show()
 print("Running toomre.py tests")
 
 i = plt.figure(4)
-star_sd = np.reshape(DG.star_data['masses'], (res, res))
+star_sd = DG.star_data['masses']
 gas_Q = toom.Q_gas(toom.sound_speed, gas_v, gas_d, gas_sd + star_sd)
 plt.imshow(gas_Q)
 plt.title('Gas Q')
