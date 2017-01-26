@@ -23,13 +23,8 @@ class DataGridder(object):
         self.header, self.gas, self.star = self.read_data()
         self.extract_header()
 
-        self.gas_id_arr, self.gas_vel_arr, self.gas_mass_arr, self.gas_d_arr = self.bin_data(self.gas, self.gas_mass, True)
-        self.star_id_arr, self.star_vel_arr, self.star_mass_arr = self.bin_data(self.star, self.star_mass, False)
-
-        self.mean_gas_vel_arr = self.mean_grid(self.gas_vel_arr)
-        self.mean_star_vel_arr = self.mean_grid(self.star_vel_arr)
-        
-        self.mean_gas_d_arr = self.mean_grid(self.gas_d_arr)
+        self.gas_data = self.bin_data(self.gas, self.gas_mass, True)
+        self.star_data = self.bin_data(self.star, self.star_mass, False)
 
         return
 
@@ -67,26 +62,31 @@ class DataGridder(object):
         return [(sum(x)/len(x)) if len(x) > 0 else 0. for x in grid]
 
 
-    def bin_data(self, raw_data, part_mass, hydro=True):
+    def bin_data(self, raw_data, part_mass, hydro=True, ids=False):
         # raw_data is e.g. GADGET['PartType0'].
         # grids are left as flat lists for efficiency
         # vel_grid returns v/r for each **particle** in a similar way to
         # id_grid, use mean_grid to bin fully
         # if(hyrdo) we also bin and return density (pressure)
+        # if (ids) we give a list of ids per bin (warning:SLOW)
 
-        id_grid = [[] for x in range((self.binsx*self.binsy))]
-        vel_grid = [[] for x in range((self.binsx*self.binsy))]
-        mass_arr = np.zeros(self.binsx*self.binsy)
+        vel_arr = np.zeros(self.binsx*self.binsy)
+        n_arr = np.zeros(self.binsx*self.binsy)
+
+        if (ids):
+            id_grid = [[] for x in range((self.binsx*self.binsy))]
 
         if (hydro):
-            d_grid = [[] for x in range((self.binsx*self.binsy))]
+            d_arr = np.zeros(self.binsx*self.binsy)
 
         n_particles = len(raw_data['Coordinates'])
 
         coords = raw_data['Coordinates']
-        ids = raw_data['ParticleIDs']
         vels = raw_data['Velocities']
         radiis = self.radii(coords)
+
+        if (ids):
+            ids = raw_data['ParticleIDs']
 
         if (hydro):
             density = raw_data['Density']
@@ -94,27 +94,47 @@ class DataGridder(object):
         binsize_x = (self.xmax - self.xmin)/(self.binsx)
         binsize_y = (self.ymax - self.ymin)/(self.binsy)
 
-
         for particle in range(n_particles):
             binx = int(np.floor((coords[particle][0] - self.xmin)/binsize_x))
             biny = int(np.floor((coords[particle][1] - self.ymin)/binsize_y))
 
-            # todo: this should be done in a preprocessing loop
+            # todo: this should really be done in a preprocessing loop
             if ((binx > 0) and (biny > 0) and (binx < self.binsx) and (biny < self.binsy)):
                 this_bin = binx + self.binsx*biny
 
-                # Now we do the processing for this particle
-                id_grid[this_bin].append(ids[particle])
-                vel_grid[this_bin].append((self.rms(vels[particle])/radiis[particle])/(3.086e16))
-                mass_arr[this_bin] += part_mass
+                n_arr[this_bin] += 1
+                vel_arr[this_bin] += (self.rms(vels[particle])/radiis[particle])/(3.086e16)
+                
+                if (ids):
+                    id_grid[this_bin].append(ids[particle])
 
                 if (hydro):
-                    d_grid[this_bin].append(density[particle])
+                    d_arr[this_bin] += density[particle]
 
             else:
                 pass  # The particle does not lie within the range
 
+        # Tidy up
+        
+        m_arr = n_arr * part_mass
+
+        # To prevent divide by 0 errors, we will have 0 velocity anyway
+        n_arr[n_arr == 0] = 1
+        vel_arr = vel_arr/n_arr
+        
         if (hydro):
-            return id_grid, vel_grid, mass_arr, d_grid
-        else:
-            return id_grid, vel_grid, mass_arr
+            d_arr = d_arr/n_arr
+
+        
+        ret = {'masses' : m_arr,
+               'velocities' : vel_arr,}
+
+        if (hydro):
+            ret['densities'] = d_arr
+
+        if (ids):
+            ret['ids'] = id_grid
+
+        return ret
+
+
