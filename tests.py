@@ -10,7 +10,6 @@ fname = "test_data.hdf5"
 res = 50
 DG = pre.DataGridder(fname, res, res, -100, 100, -100, 100)
 
-print("Star Particle Attrs: {}".format([x for x in DG.star.keys()]))
 print("Gass Mass: {}; Star Mass: {}".format(DG.gas_mass, DG.star_mass))
 
 # Now we vis!

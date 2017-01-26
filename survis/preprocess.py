@@ -34,7 +34,25 @@ class DataGridder(object):
         f = h5py.File(self.fname, 'r')
 
         # Header, gas, stars
-        return f['Header'], f['PartType0'], f['PartType4']
+        return f['Header'], self.clean_data(f['PartType0'], True), self.clean_data(f['PartType4'])
+
+
+    def clean_data(self, data, hydro=False):
+        # retrns the gadget data in an iteratable *BY PARTICLE* format
+        n_particles = len(data['Coordinates'])
+
+        if (hydro):
+            ret = np.array([data['Coordinates'],
+                            data['Velocities'],
+                            data['ParticleIDs'],
+                            data['Density']])
+
+        else:
+            ret = np.array([data['Coordinates'],
+                            data['Velocities'],
+                            data['ParticleIDs']])
+
+        return ret.T
 
 
     def extract_header(self):
@@ -49,7 +67,7 @@ class DataGridder(object):
 
     def radii(self, coords):
         # Takes the coordinates and returns the radii
-        return np.sqrt(coords[:, 0]**2 + coords[:, 1]**2 + coords[:, 2]**2)
+        return np.sqrt(coords[0]**2 + coords[1]**2 + coords[2]**2)
 
 
     def rms(self, item):
@@ -79,37 +97,27 @@ class DataGridder(object):
         if (hydro):
             d_arr = np.zeros(self.binsx*self.binsy)
 
-        n_particles = len(raw_data['Coordinates'])
-
-        coords = raw_data['Coordinates']
-        vels = raw_data['Velocities']
-        radiis = self.radii(coords)
-
-        if (ids):
-            ids = raw_data['ParticleIDs']
-
-        if (hydro):
-            density = raw_data['Density']
+        n_particles = len(raw_data)
 
         binsize_x = (self.xmax - self.xmin)/(self.binsx)
         binsize_y = (self.ymax - self.ymin)/(self.binsy)
 
-        for particle in range(n_particles):
-            binx = int(np.floor((coords[particle][0] - self.xmin)/binsize_x))
-            biny = int(np.floor((coords[particle][1] - self.ymin)/binsize_y))
+        for particle in raw_data:
+            binx = int(np.floor((particle[0][0] - self.xmin)/binsize_x))
+            biny = int(np.floor((particle[0][1] - self.ymin)/binsize_y))
 
             # todo: this should really be done in a preprocessing loop
             if ((binx > 0) and (biny > 0) and (binx < self.binsx) and (biny < self.binsy)):
                 this_bin = binx + self.binsx*biny
 
                 n_arr[this_bin] += 1
-                vel_arr[this_bin] += (self.rms(vels[particle])/radiis[particle])/(3.086e16)
+                vel_arr[this_bin] += (self.rms(particle[1])/self.radii(particle[1]))/(3.086e16)
                 
                 if (ids):
-                    id_grid[this_bin].append(ids[particle])
+                    id_grid[this_bin].append(particle[2])
 
                 if (hydro):
-                    d_arr[this_bin] += density[particle]
+                    d_arr[this_bin] += particle[3]
 
             else:
                 pass  # The particle does not lie within the range
