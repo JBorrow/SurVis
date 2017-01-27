@@ -1,10 +1,13 @@
+"""
 # Preprocesses the gadget data into a useful format
 # Contains the object DataGridder which does the heavy lifting with
 # the function bin_data which iterates through the supplied file.
-# This data can then be visualised (see test() for an example).
+# This data can then be visualised (see test.py for an example).
+"""
 
 import h5py
 import numpy as np
+from numba import jit
 
 
 class DataGridder(object):
@@ -62,6 +65,38 @@ class DataGridder(object):
         return [(sum(x)/len(x)) if len(x) > 0 else 0. for x in grid]
 
 
+    def bin_hydro(self, nbx, nby, vels, binsx, binsy, density):
+        vel_arr = np.zeros((nbx, nby))
+        d_arr = np.zeros((nbx, nby))
+        n_arr = np.zeros((nbx, nby))
+
+        for v, bx, by, rho in zip(vels, binsx, binsy, density):
+            try:
+                vel_arr[bx, by] += v
+                d_arr[bx, by] += rho
+                n_arr[bx, by] += 1
+            except IndexError:
+                # Particle out of range, ignore
+                pass
+    
+        return vel_arr, n_arr, d_arr
+
+
+    def bin_nohydro(self, nbx, nby, vels, binsx, binsy):
+        vel_arr = np.zeros((nbx, nby))
+        n_arr = np.zeros((nbx, nby))
+
+        for v, bx, by in zip(vels, binsx, binsy):
+            try:
+                vel_arr[bx, by] += v
+                n_arr[bx, by] += 1
+            except IndexError:
+                # Particle out of range, ignore
+                pass
+    
+        return vel_arr, n_arr
+
+
     def bin_data(self, data, part_mass, hydro=True, ids=False):
         # raw_data is e.g. GADGET['PartType0'].
         # grids are left as flat lists for efficiency
@@ -84,31 +119,26 @@ class DataGridder(object):
         binsize_x = (self.xmax - self.xmin)/(self.binsx)
         binsize_y = (self.ymax - self.ymin)/(self.binsy)
 
-        binsx = np.floor((data['Coordinates'][:, 0] - self.xmin)/binsize_x).astype(int)
-        binsy = np.floor((data['Coordinates'][:, 1] - self.ymin)/binsize_y).astype(int)
+        binnedx = np.floor((data['Coordinates'][:, 0] - self.xmin)/binsize_x).astype(int)
+        binnedy = np.floor((data['Coordinates'][:, 1] - self.ymin)/binsize_y).astype(int)
 
-        vels = np.sqrt(np.mean(np.square(data['Velocities'][()]), 1)/np.sum(np.square(data['Coordinates'][()]), 1))/3.086e16
+        vels = np.sqrt(np.mean(np.square(data['Velocities'][()]), 1)/np.sum(np.square(data['Coordinates'][()]), 1))/3e16
+
+        if(hydro):
+            density = data['Density']
         
         if (ids):
             print("WARNING: The ID feature is not implemented")
 
         if(hydro):
-            for v, bx, by, rho in zip(vels, binsx, binsy, data['Density']):
-                try:
-                    vel_arr[bx, by] += v
-                    d_arr[bx, by] += rho
-                    n_arr[bx, by] += 1
-                except IndexError:
-                    # Particle out of range, ignore
-                    pass
+            v, n, d = self.bin_hydro(self.binsx, self.binsy, vels, binnedx, binnedy, density)
+            vel_arr += v
+            d_arr += d
+            n_arr += n
         else:
-            for v, bx, by in zip(vels, binsx, binsy):
-                try:
-                    vel_arr[bx, by] += v
-                    n_arr[bx, by] += 1
-                except IndexError:
-                    # Particle out of range, ignore
-                    pass
+            v, n = self.bin_nohydro(self.binsx, self.binsy, vels, binnedx, binnedy)
+            vel_arr += v
+            n_arr += n
 
         # Tidy up
         
