@@ -7,7 +7,6 @@
 
 import h5py
 import numpy as np
-from numba import jit
 
 
 class DataGridder(object):
@@ -64,7 +63,7 @@ class DataGridder(object):
         # it across the list
         return [(sum(x)/len(x)) if len(x) > 0 else 0. for x in grid]
 
-
+    
     def bin_hydro(self, nbx, nby, vels, binsx, binsy, density):
         vel_arr = np.zeros((nbx, nby))
         d_arr = np.zeros((nbx, nby))
