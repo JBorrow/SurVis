@@ -33,10 +33,17 @@ h.show()
 
 print("Running toomre.py tests")
 
+import matplotlib.cm as cm
 i = plt.figure(4)
 star_sd = DG.star_data['masses']
 gas_Q = toom.Q_gas(toom.sound_speed, gas_v, gas_d, gas_sd + star_sd)
-plt.imshow(gas_Q)
+
+# We need to mask out the areas with no particles
+masked = np.ma.array(gas_Q, mask=(gas_Q==0.))
+cmap = cm.viridis
+cmap.set_bad('white', -1.)
+
+plt.imshow(masked, cmap)
 plt.title('Gas Q')
 plt.colorbar()
 i.show()
