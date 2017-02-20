@@ -84,8 +84,8 @@ class DataGridder(object):
         binsize_x = (self.xmax - self.xmin)/(self.binsx)
         binsize_y = (self.ymax - self.ymin)/(self.binsy)
 
-        binsx = np.floor((data['Coordinates'][:, 0] - self.xmin)/binsize_x).astype(int)
-        binsy = np.floor((data['Coordinates'][:, 1] - self.ymin)/binsize_y).astype(int)
+        binsx = ((data['Coordinates'][:, 0] - self.xmin)/binsize_x).astype(int)
+        binsy = ((data['Coordinates'][:, 1] - self.ymin)/binsize_y).astype(int)
 
         vels = np.sqrt(np.mean(np.square(data['Velocities'][()]), 1)/np.sum(np.square(data['Coordinates'][()]), 1))/3.086e16
         
