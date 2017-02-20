@@ -1,5 +1,6 @@
 import survis.preprocess as pre
 import survis.toomre as toom
+import survis.helper as hp
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -35,15 +36,12 @@ print("Running toomre.py tests")
 
 import matplotlib.cm as cm
 i = plt.figure(4)
-star_sd = DG.star_data['masses']
-gas_Q = toom.Q_gas(toom.sound_speed, gas_v, gas_d, gas_sd + star_sd)
 
-# We need to mask out the areas with no particles
-masked = np.ma.array(gas_Q, mask=(gas_Q==0.))
+toomQ = hp.get_toomre_Q(DG, toom.sound_speed)
 cmap = cm.viridis
 cmap.set_bad('white', -1.)
 
-plt.imshow(masked, cmap)
+plt.imshow(toomQ, cmap)
 plt.title('Gas Q')
 plt.colorbar()
 i.show()
