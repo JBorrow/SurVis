@@ -8,8 +8,8 @@ print("Running preprocess.py tests")
 # Plots a few things with the example data
 
 fname = "test_data.hdf5"
-res = 50
-DG = pre.DataGridder(fname, res, res, -100, 100, -100, 100)
+res = hp.get_res(5, [-100, 100], [-100, 100]) 
+DG = pre.DataGridder(fname, res[0], res[1], -100, 100, -100, 100)
 
 print("Gass Mass: {}; Star Mass: {}".format(DG.gas_mass, DG.star_mass))
 
