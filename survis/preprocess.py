@@ -1,7 +1,9 @@
-# Preprocesses the gadget data into a useful format
-# Contains the object DataGridder which does the heavy lifting with
-# the function bin_data which iterates through the supplied file.
-# This data can then be visualised (see test() for an example).
+"""
+Preprocesses the gadget data into a useful format
+Contains the object DataGridder which does the heavy lifting with
+the function bin_data which iterates through the supplied file.
+This data can then be visualised (see test() for an example).
+"""
 
 import h5py
 import numpy as np
@@ -9,8 +11,8 @@ import numpy as np
 
 class DataGridder(object):
     def __init__(self, fname, binsx, binsy, xmin, xmax, ymin, ymax):
-        # note that binsx and binsy should be similar to the smoothing
-        # lengh used in the simulation.
+        """ note that binsx and binsy should be similar to the smoothing
+            lengh used in the simulation. """
         self.fname = fname
 
         self.binsx = binsx
@@ -30,7 +32,7 @@ class DataGridder(object):
 
 
     def read_data(self):
-        # Breaks down the data into particle types
+        """ Breaks down the data into particle types """
         f = h5py.File(self.fname, 'r')
 
         # Header, gas, stars
@@ -38,7 +40,7 @@ class DataGridder(object):
 
 
     def extract_header(self):
-        # Extracts the useful information in the Header
+        """ Extracts the useful information in the Header """
         self.time = self.header.attrs['Time']
         self.box_size = self.header.attrs['BoxSize']
         self.gas_mass = self.header.attrs['MassTable'][0]
@@ -47,28 +49,13 @@ class DataGridder(object):
         return self.time, self.box_size, self.gas_mass, self.star_mass
 
 
-    def radii(self, coords):
-        # Takes the coordinates and returns the radii
-        return np.sqrt(coords[0]**2 + coords[1]**2 + coords[2]**2)
-
-
-    def rms(self, item):
-        return np.sqrt(np.mean(np.square(item)))
-
-
-    def mean_grid(self, grid):
-        # Takes a grid (well, a flattened one, such as id_grid) and means
-        # it across the list
-        return [(sum(x)/len(x)) if len(x) > 0 else 0. for x in grid]
-
-
     def bin_data(self, data, part_mass, hydro=True, ids=False):
-        # raw_data is e.g. GADGET['PartType0'].
-        # grids are left as flat lists for efficiency
-        # vel_grid returns v/r for each **particle** in a similar way to
-        # id_grid, use mean_grid to bin fully
-        # if(hyrdo) we also bin and return density (pressure)
-        # if (ids) we give a list of ids per bin (warning:SLOW)
+        """ raw_data is e.g. GADGET['PartType0'].
+            grids are left as flat lists for efficiency
+            vel_grid returns v/r for each **particle** in a similar way to
+            id_grid, use mean_grid to bin fully
+            if(hyrdo) we also bin and return density (pressure)
+            if (ids) we give a list of ids per bin (warning:SLOW) """
 
         vel_arr = np.zeros((self.binsx, self.binsy))
         n_arr = np.zeros((self.binsx, self.binsy))
@@ -87,7 +74,8 @@ class DataGridder(object):
         binsx = ((data['Coordinates'][:, 0] - self.xmin)/binsize_x).astype(int)
         binsy = ((data['Coordinates'][:, 1] - self.ymin)/binsize_y).astype(int)
 
-        vels = np.sqrt(np.mean(np.square(data['Velocities'][()]), 1)/np.sum(np.square(data['Coordinates'][()]), 1))/3.086e16
+        radii = np.sum(np.square(data['Coordinates'][()]), 1))/3.086e16
+        vels = np.sqrt(np.mean(np.square(data['Velocities'][()]), 1)/radii
 
         if (ids):
             print("WARNING: The ID feature is not implemented")
