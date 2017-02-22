@@ -15,16 +15,21 @@ def get_res(smoothing, bbox_x, bbox_y):
     return [res(bbox_x, smoothing), res(bbox_y, smoothing)]
 
 
-def get_toomre_Q(DG, sound):
+def get_toomre_Q(DG, sound, res_elem):
     """ DG is the datagrid, and sound is a callable function
         that returns the sound speed (see toomre.py).
+
+        res_elem gives the size of the resolution element in simulation units
+        (used to convert the mass in a pixel to surface density)
+
         It automatically masks regions where there are no particles,
         which can be used through cmap.set_bad()."""
 
-    gas_sd = DG.gas_data['masses']
-    star_sd = DG.star_data['masses']
+    area = res_elem**2
+    gas_sd = DG.gas_data['masses']/area
+    star_sd = DG.star_data['masses']/area
 
-    gas_v = DG.gas_data['velocities']
+    gas_v = DG.gas_data['velocities']  # note this is actually v/r
     gas_d = DG.gas_data['densities']
 
     gas_q = toom.Q_gas(sound, gas_v, gas_d, gas_sd + star_sd)
@@ -32,6 +37,3 @@ def get_toomre_Q(DG, sound):
     # now the sections with no particles must be masked
 
     return np.ma.array(gas_q, mask=(gas_q == 0.))
-    
-
-

@@ -88,7 +88,7 @@ class DataGridder(object):
         binsy = ((data['Coordinates'][:, 1] - self.ymin)/binsize_y).astype(int)
 
         vels = np.sqrt(np.mean(np.square(data['Velocities'][()]), 1)/np.sum(np.square(data['Coordinates'][()]), 1))/3.086e16
-        
+
         if (ids):
             print("WARNING: The ID feature is not implemented")
 
@@ -111,16 +111,16 @@ class DataGridder(object):
                     pass
 
         # Tidy up
-        
+
         m_arr = n_arr * part_mass
 
         # To prevent divide by 0 errors, we will have 0 velocity anyway
         n_arr[n_arr == 0] = 1
         vel_arr = vel_arr/n_arr
-        
+
         if (hydro):
             d_arr = d_arr/n_arr
-        
+
         ret = {'masses' : m_arr,
                'velocities' : vel_arr,}
 
@@ -131,5 +131,3 @@ class DataGridder(object):
             ret['ids'] = id_grid
 
         return ret
-
-

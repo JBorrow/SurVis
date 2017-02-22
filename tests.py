@@ -8,7 +8,8 @@ print("Running preprocess.py tests")
 # Plots a few things with the example data
 
 fname = "test_data.hdf5"
-res = hp.get_res(5, [-100, 100], [-100, 100]) 
+res_elem = 5
+res = hp.get_res(res_elem, [-100, 100], [-100, 100])
 DG = pre.DataGridder(fname, res[0], res[1], -100, 100, -100, 100)
 
 print("Gass Mass: {}; Star Mass: {}".format(DG.gas_mass, DG.star_mass))
@@ -37,7 +38,7 @@ print("Running toomre.py tests")
 import matplotlib.cm as cm
 i = plt.figure(4)
 
-toomQ = hp.get_toomre_Q(DG, toom.sound_speed)
+toomQ = hp.get_toomre_Q(DG, toom.sound_speed, res_elem)
 cmap = cm.viridis
 cmap.set_bad('white', -1.)
 
