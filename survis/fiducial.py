@@ -9,10 +9,12 @@ def surface_density(DG, R, dR):
     def sd_per_type(data, mass):
         """ Calculates the surface density for a given GADGET dataset and
             particle mass. """
-        radii = np.sqrt(np.sum(np.square(data['Coordinates'][()]), 1))
-        within_bounds = np.ma.array(radii, mask=((radii > R-dR) and (radii < R+dR)))
 
-        n_particles = np.count(within_bounds)
+        radii = np.sqrt(np.sum(np.square(data['Coordinates'][()]), 1)) - R
+        radii_mask = np.logical_or((radii < -dR), (radii > dR))
+        within_bounds = np.ma.array(radii, mask=radii_mask)
+
+        n_particles = within_bounds.count()
         m_particles = n_particles * mass
 
         area_enclosed = 4 * np.pi * R * dR
