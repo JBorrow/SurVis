@@ -47,7 +47,9 @@ h.show()
 
 print("Running fiducial.py tests")
 
-print(fid.surface_density(DG, 15, 2))
+sgas, sstar = fid.surface_density(DG, 15, 2)
+print("Gas surface density: {}; Star: {}".format(sgas, sstar))
+print("Gas Toomre Q: {}".format(fid.toomre_Q_gas(DG, 15, 2)))
 
 print("Running toomre.py tests")
 
