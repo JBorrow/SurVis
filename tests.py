@@ -1,6 +1,7 @@
 import survis.preprocess as pre
 import survis.toomre as toom
 import survis.helper as hp
+import survis.fiducial as fid
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -14,11 +15,22 @@ DG = pre.DataGridder(fname, res[0], res[1], -100, 100, -100, 100)
 
 print("Gass Mass: {}; Star Mass: {}".format(DG.gas_mass, DG.star_mass))
 
+def plot_circ(R):
+    rs = np.ones(100) * R
+    thetas = np.arange(0, 1, 0.01) * np.pi * 2
+    x = rs * np.cos(thetas)
+    y = rs * np.sin(thetas)
+    return x, y
+
 # Now we vis!
 f = plt.figure(1)
 gas_sd = DG.gas_data['masses']
 plt.imshow(gas_sd)
 plt.title('Gas mass')
+xs, ys = plot_circ(13 * 40/100.)
+plt.plot(xs + 20 , ys + 20)
+xs, ys = plot_circ(17 * 40/100.)
+plt.plot(xs + 20 , ys + 20)
 f.show()
 
 g = plt.figure(2)
@@ -32,6 +44,10 @@ gas_d = DG.gas_data['densities']
 plt.imshow(gas_d)
 plt.title('Gas density')
 h.show()
+
+print("Running fiducial.py tests")
+
+print(fid.surface_density(DG, 15, 2))
 
 print("Running toomre.py tests")
 
