@@ -10,9 +10,13 @@ import numpy as np
 
 
 class DataGridder(object):
-    def __init__(self, fname, binsx, binsy, xmin, xmax, ymin, ymax):
+    def __init__(self, fname, binsx, binsy, xmin, xmax, ymin, ymax, autobin=True):
         """ note that binsx and binsy should be similar to the smoothing
-            lengh used in the simulation. """
+            lengh used in the simulation.
+
+            If you do not want the data to be autmatically binned on the
+            initialization of DataGridder, set autobin to false."""
+
         self.fname = fname
 
         self.binsx = binsx
@@ -25,8 +29,9 @@ class DataGridder(object):
         self.header, self.gas, self.star = self.read_data()
         self.extract_header()
 
-        self.gas_data = self.bin_data(self.gas, self.gas_mass, True)
-        self.star_data = self.bin_data(self.star, self.star_mass, False)
+        if autobin:
+            self.gas_data = self.bin_data(self.gas, self.gas_mass, True)
+            self.star_data = self.bin_data(self.star, self.star_mass, False)
 
         return
 
