@@ -46,7 +46,7 @@ def toomre_Q_gas(DG, R, dR, sound_speed=sound_speed, G=4.302e-6):
     radii_mask = np.logical_or((radii < (R - dR)), (radii > (R + dR)))
     vector_mask = np.stack([radii_mask, radii_mask, radii_mask])
 
-    vels = np.mean(rms(np.ma.array(data['Velocities'][()], mask=vector_mask)))
+    vels = np.mean(rss(np.ma.array(data['Velocities'][()], mask=vector_mask)))
     densities = np.mean(np.ma.array(data['Density'], mask=radii_mask))
 
     surf_dens = sum(surface_density(DG, R, dR))
