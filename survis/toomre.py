@@ -1,4 +1,4 @@
-# Contains routines that visualise the toomre Q parameter.
+    # Contains routines that visualise the toomre Q parameter.
 import numpy as np
 
 def sound_speed(density):
@@ -10,6 +10,15 @@ def sound_speed(density):
     T = 1e4
     original = np.ones_like(density) * np.sqrt((gamma * R * T)/(M)) # m/s
     return original * 0.001 # km/s
+
+
+def sound_speed_sne(density, f=1, F=1, fg=0.1, P=300000, G=4.302e-6):
+    """ Returns the sound speed for the supernovae driven model in Martizzi 2015
+        which has a constant entropy. """
+
+    entropy = 4.5 * (f/F)**(3./2.) * G**(3./4.) * P**(1./2.) * fg **(-1)
+
+    return (5./4.) * entropy * density**(1./4.)
 
 
 def Q_gas(sound_speed, kappa, density, surface_density, G=4.302e-6):
