@@ -15,13 +15,16 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import matplotlib.animation as animation
+from tqdm import tqdm
 import survis
 
 # Constants
 solar_radius = 8.  # kpc
 smoothing = 0.2 * 2  # kpc
 
-def processing_run(filename, res, bbox_x, bbox_y):
+def processing_run(filename, res, bbox_x, bbox_y, callback=None):
     """ Generates the processed data out of the snapshot """
 
     data_grid = survis.preprocess.DataGridder(filename,
@@ -48,6 +51,9 @@ def processing_run(filename, res, bbox_x, bbox_y):
                                        smoothing,
                                        survis.toomre.sound_speed_sne)
 
+    if not (callback is None):
+        callback()
+
     return Q_map, sd_map, Q_r, sd_r, filename[9:12]
 
 
@@ -62,8 +68,32 @@ def get_snaps(directory = "."):
     return n_snaps
 
 
+def make_movie_imshow(data, bad_color='k', log=False):
+    images = []
+    colormap = cm.viridis
+    colormap.set_bad(bad_color, 0.1)
+
+    fig = plt.figure()
+
+    for item in tqdm(data, desc="Data plotting"):
+        images.append([plt.imshow(item, cmap=colormap)])
+
+    return animation.ArtistAnimation(fig, images, interval=50, repeat_delay=3000,
+                                   blit=True)
+
 def make_plots(result):
-    return 0
+    result = np.array(result)
+    Q_maps = result.T[0]
+    sd_maps = result.T[1]
+    Q_r = result.T[2]
+    sd_r = result.T[3]
+
+    Q_movie = make_movie_imshow(Q_maps)
+    sd_movie = make_movie_imshow(sd_maps)
+
+    print("Writing movies (this can take some time and we cannot get progress)")
+    Q_movie.save('Q_movie.mp4')
+    sd_movie.save('sd_move.mp4')
 
 
 if __name__ == "__main__":
@@ -71,9 +101,9 @@ if __name__ == "__main__":
 
     import sys
     import os
+    import pickle
     from multiprocessing import Pool
     from functools import partial
-
 
     # Physics Setup
     bbox_x = [-100, 100]
@@ -90,20 +120,35 @@ if __name__ == "__main__":
     if "--test" in sys.argv:
         filenames = ['test_data.hdf5']
 
-    # We need more arguments than Pool.map allows
-    mapped_process = partial(processing_run, res=res, bbox_x=bbox_x, bbox_y=bbox_y)
+    if "--read" in sys.argv:
+        print("Reading data")
+        with open('processed_variables.pkl', 'rb') as pck:
+            result = pickle.load(pck)
 
-    with Pool(processes=n_cpus) as processing_pool:
-        result = processing_pool.map(mapped_process, filenames)
+    else:
+        print("Beginning data analysis \n")
+
+        # We need more arguments than Pool.map allows
+        t = tqdm(total=int(n_snaps/n_cpus) + 1, desc="Data Processing")
+
+        def update():  # This is required because of pickling
+            t.update()
+
+        mapped_process = partial(processing_run,
+                                 res=res, bbox_x=bbox_x, bbox_y=bbox_y,
+                                 callback=update)
+
+        with Pool(processes=n_cpus) as processing_pool:
+            result = processing_pool.map(mapped_process, filenames)
 
 
     if "--save" in sys.argv:
-        import pickle
-
+        print("Saving data to processed_variables.pkl")
         with open('processed_variables.pkl', 'wb') as pck:
             pickle.dump(result, pck)
 
         exit(0)
 
     else:
+        print("Beginning data plotting")
         make_plots(result)
