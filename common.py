@@ -16,6 +16,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+import matplotlib.colors as col
 import matplotlib.animation as animation
 from tqdm import tqdm
 import survis
@@ -68,32 +69,63 @@ def get_snaps(directory = "."):
     return n_snaps
 
 
-def make_movie_imshow(data, bad_color='k', log=False):
+def make_movie_imshow(data, bad_color='black', log=False):
     images = []
-    colormap = cm.viridis
-    colormap.set_bad(bad_color, 0.1)
 
     fig = plt.figure()
+    colormap = cm.get_cmap('viridis')
+    c_scale = col.Normalize(vmin=0 , vmax=3)
+    colormap.set_bad(bad_color, -1)
+
 
     for item in tqdm(data, desc="Data plotting"):
-        images.append([plt.imshow(item, cmap=colormap)])
+        images.append([plt.imshow(item, cmap=colormap, vmin=0, vmax=3)])
+
+    fig.colorbar(cmap=colormap, norm=c_scale, mappable=images[-1][0])
 
     return animation.ArtistAnimation(fig, images, interval=50, repeat_delay=3000,
                                    blit=True)
 
-def make_plots(result):
+def make_linear_plot(data, ylabel, ymin=0, ymax=5.):
+    n_snaps = len(data)
+    fig, ax = plt.subplots()
+
+    ax.plot(np.arange(n_snaps), np.array(data))
+
+    ax.set_xlim(0, n_snaps)
+    ax.set_ylim(ymin, ymax)
+
+    ax.set_xlabel("Snapshot number")
+    ax.set_ylabel(ylabel)
+
+    return fig, ax
+
+def make_plots(result, make_movies=True):
     result = np.array(result)
     Q_maps = result.T[0]
     sd_maps = result.T[1]
     Q_r = result.T[2]
-    sd_r = result.T[3]
+    # We have to manually convert the lists here from when they get pickled
+    sd_r = np.array([np.array(x) for x in result.T[3]]).T
+    sd_r_gas = sd_r[0, :]
+    sd_r_star = sd_r[1, :]
 
-    Q_movie = make_movie_imshow(Q_maps)
-    sd_movie = make_movie_imshow(sd_maps)
 
-    print("Writing movies (this can take some time and we cannot get progress)")
-    Q_movie.save('Q_movie.mp4')
-    sd_movie.save('sd_move.mp4')
+    Q_fig, Q_ax = make_linear_plot(Q_r, "Toomre $Q$", 0.5, 3.0)
+    Q_fig.savefig("Q_fig.pdf")
+
+    print("Writing plots")
+    sd_fig, sd_ax = make_linear_plot(sd_r_gas, "Surface Density ($M_\odot$ pc$^{-2}$)", 0, 2e7)
+    sd_fig.savefig("sd_gas.pdf")
+
+
+    if make_movies:
+        Q_movie = make_movie_imshow(Q_maps)
+        sd_movie = make_movie_imshow(sd_maps)
+
+        print("Writing movies (this can take some time and we cannot get progress)")
+        Q_movie.save('Q_movie.mp4')
+        sd_movie.save('sd_move.mp4')
 
 
 if __name__ == "__main__":
@@ -108,7 +140,7 @@ if __name__ == "__main__":
     # Physics Setup
     bbox_x = [-100, 100]
     bbox_y = bbox_x
-    res_elem = 5.
+    res_elem = 0.5
     res = survis.helper.get_res(res_elem, bbox_x, bbox_y)
 
     # Computing Setup
