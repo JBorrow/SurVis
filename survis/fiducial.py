@@ -26,7 +26,7 @@ def surface_density(DG, R, dR):
         n_particles = within_bounds.count()
         m_particles = n_particles * mass
 
-        area_enclosed = 4 * np.pi * R * dR
+        area_enclosed = 2 * np.pi * R * dR
 
         return m_particles / area_enclosed
 
