@@ -3,6 +3,7 @@
     smoothing length. """
 
 import survis.toomre as toom
+import survis.fiducial as fid
 import numpy as np
 
 
@@ -37,3 +38,15 @@ def get_toomre_Q(DG, sound, res_elem):
     # now the sections with no particles must be masked
 
     return np.ma.array(gas_q, mask=(gas_q == 0.))
+
+
+def toomre_Q_r(DG, sound, res_elem, max_radius):
+    """ Plots the toomre Q as a function of R using fiducial.toomre_Q_gas. """
+    # Yes, this is very slow.
+    radii = np.arange(res_elem, max_radius, res_elem)
+    toomre_Q = []
+
+    for rad in radii:
+        toomre_Q.append(fid.toomre_Q_gas(DG, rad, res_elem, sound))
+
+    return toomre_Q
