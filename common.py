@@ -110,12 +110,16 @@ def make_plots(result, make_movies=True):
     sd_r_gas = sd_r[0, :]
     sd_r_star = sd_r[1, :]
 
+    plt.imshow(Q_maps[250]/1e5)
+    plt.colorbar()
+    plt.show()
+
 
     Q_fig, Q_ax = make_linear_plot(Q_r, "Toomre $Q$", 0.5, 3.0)
     Q_fig.savefig("Q_fig.pdf")
 
     print("Writing plots")
-    sd_fig, sd_ax = make_linear_plot(sd_r_gas, "Surface Density ($M_\odot$ pc$^{-2}$)", 0, 2e7)
+    sd_fig, sd_ax = make_linear_plot(sd_r_gas, "Surface Density ($M_\odot$ pc$^{-2}$)", 0, 1e5)
     sd_fig.savefig("sd_gas.pdf")
 
 
@@ -179,8 +183,7 @@ if __name__ == "__main__":
         with open('processed_variables.pkl', 'wb') as pck:
             pickle.dump(result, pck)
 
-        exit(0)
 
-    else:
+    if not ("--noplot" in sys.argv):
         print("Beginning data plotting")
         make_plots(result)
