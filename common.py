@@ -25,7 +25,7 @@ import survis
 solar_radius = 8.  # kpc
 smoothing = 0.2 * 2  # kpc
 
-def processing_run(filename, res, bbox_x, bbox_y, callback=None):
+def processing_run(filename, res, bbox_x, bbox_y, elem_size, callback=None):
     """ Generates the processed data out of the snapshot """
 
     data_grid = survis.preprocess.DataGridder(filename,
@@ -39,10 +39,11 @@ def processing_run(filename, res, bbox_x, bbox_y, callback=None):
     # First we extract the maps
     Q_map = survis.helper.get_toomre_Q(data_grid,
                                        survis.toomre.sound_speed_sne,
-                                       res[0])
+                                       elem_size)
 
     # Normally the masses of each element are given, we must divide by size
-    sd_map = data_grid.gas_data['masses']/(res[0]*res[1])
+    # as well as a conversion factor to give Msun / pc^2
+    sd_map = data_grid.gas_data['masses']/((1e6) * elem_size**2)
 
 
     # Now the values at a given radius
@@ -52,10 +53,16 @@ def processing_run(filename, res, bbox_x, bbox_y, callback=None):
                                        smoothing,
                                        survis.toomre.sound_speed_sne)
 
+                                       # Now the values for all radii
+    Q_variation_with_r = survis.helper.toomre_Q_r(data_grid,
+                                                  survis.toomre.sound_speed_sne,
+                                                  smoothing,
+                                                  bbox_x[1])
+
     if not (callback is None):
         callback()
 
-    return Q_map, sd_map, Q_r, sd_r, filename[9:12]
+    return Q_map, sd_map, Q_r, sd_r, Q_variation_with_r, filename[9:12]
 
 
 def get_snaps(directory = "."):
@@ -69,22 +76,41 @@ def get_snaps(directory = "."):
     return n_snaps
 
 
-def make_movie_imshow(data, bad_color='black', log=False):
+def make_movie_imshow(data, bad_color='black', log=False, vmin=0, vmax=3):
     images = []
 
     fig = plt.figure()
     colormap = cm.get_cmap('viridis')
-    c_scale = col.Normalize(vmin=0 , vmax=3)
-    colormap.set_bad(bad_color, -1)
+    c_scale = col.Normalize(vmin=vmin , vmax=vmax)
+    colormap.set_bad(bad_color, 1.0)
 
 
     for item in tqdm(data, desc="Data plotting"):
-        images.append([plt.imshow(item, cmap=colormap, vmin=0, vmax=3)])
+        images.append([plt.imshow(item, cmap=colormap, vmin=vmin, vmax=vmax)])
 
     fig.colorbar(cmap=colormap, norm=c_scale, mappable=images[-1][0])
 
     return animation.ArtistAnimation(fig, images, interval=50, repeat_delay=3000,
-                                   blit=True)
+                                     blit=True)
+
+
+def make_linear_plot_movie(data, ylabel, ymin=0, ymax=0):
+    xs = np.arange(len(data[0]))*smoothing
+    n_images = len(data)
+    images = []
+
+    fig, ax = plt.subplots()
+    ax.plot([0, 1000], [1, 1], 'k--')
+
+    for item in tqdm(data, desc="Linear plot"):
+        images.append(ax.plot(xs, item, 'b-'))
+
+    plt.xlim([0, 100*smoothing])
+    plt.ylim([0, 1.5])
+
+    return animation.ArtistAnimation(fig, images, interval=50, repeat_delay=3000,
+                                     blit=True)
+
 
 def make_linear_plot(data, ylabel, ymin=0, ymax=5.):
     n_snaps = len(data)
@@ -93,43 +119,48 @@ def make_linear_plot(data, ylabel, ymin=0, ymax=5.):
     ax.plot(np.arange(n_snaps), np.array(data))
 
     ax.set_xlim(0, n_snaps)
-    ax.set_ylim(ymin, ymax)
+    #ax.set_ylim(ymin, ymax)
 
     ax.set_xlabel("Snapshot number")
     ax.set_ylabel(ylabel)
 
     return fig, ax
 
-def make_plots(result, make_movies=True):
+
+def make_plots(result, make_movies=True, show_plots=False):
     result = np.array(result)
     Q_maps = result.T[0]
     sd_maps = result.T[1]
     Q_r = result.T[2]
-    # We have to manually convert the lists here from when they get pickled
     sd_r = np.array([np.array(x) for x in result.T[3]]).T
+    Q_variation_with_r = result.T[4]
+    # We have to manually convert the lists here from when they get pickled
     sd_r_gas = sd_r[0, :]
     sd_r_star = sd_r[1, :]
 
-    plt.imshow(Q_maps[250]/1e5)
-    plt.colorbar()
-    plt.show()
-
-
     Q_fig, Q_ax = make_linear_plot(Q_r, "Toomre $Q$", 0.5, 3.0)
-    Q_fig.savefig("Q_fig.pdf")
-
-    print("Writing plots")
     sd_fig, sd_ax = make_linear_plot(sd_r_gas, "Surface Density ($M_\odot$ pc$^{-2}$)", 0, 1e5)
-    sd_fig.savefig("sd_gas.pdf")
+
+    if show_plots:
+        Q_fig.show()
+        sd_fig.show()
+        print("Showing plots, press any key to continue")
+        input()
+    else:
+        print("Writing plots")
+        Q_fig.savefig("Q_fig.pdf")
+        sd_fig.savefig("sd_gas.pdf")
 
 
     if make_movies:
-        Q_movie = make_movie_imshow(Q_maps)
-        sd_movie = make_movie_imshow(sd_maps)
+        Q_movie = make_movie_imshow(Q_maps, vmin=0, vmax=2)
+        sd_movie = make_movie_imshow(sd_maps, vmin=0, vmax=50)
+        Q_of_r_mov = make_linear_plot_movie(Q_variation_with_r, "Q")
 
         print("Writing movies (this can take some time and we cannot get progress)")
         Q_movie.save('Q_movie.mp4')
-        sd_movie.save('sd_move.mp4')
+        sd_movie.save('sd_movie.mp4')
+        Q_of_r_mov.save('Q_of_r_mov.mp4')
 
 
 if __name__ == "__main__":
@@ -172,6 +203,7 @@ if __name__ == "__main__":
 
         mapped_process = partial(processing_run,
                                  res=res, bbox_x=bbox_x, bbox_y=bbox_y,
+                                 elem_size=res_elem,
                                  callback=update)
 
         with Pool(processes=n_cpus) as processing_pool:
@@ -183,7 +215,7 @@ if __name__ == "__main__":
         with open('processed_variables.pkl', 'wb') as pck:
             pickle.dump(result, pck)
 
-
     if not ("--noplot" in sys.argv):
         print("Beginning data plotting")
-        make_plots(result)
+        show_plots = "--showplots" in sys.argv
+        make_plots(result, show_plots=show_plots)
