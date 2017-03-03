@@ -12,7 +12,7 @@ def sound_speed(density):
     return original * 0.001 # km/s
 
 
-def sound_speed_sne(density, f=1, F=1, fg=0.1, P=300000, G=4.302e-6):
+def sound_speed_sne(density, f=0.4, F=0.477, fg=0.1, P=300000, G=4.302e-6):
     """ Returns the sound speed for the supernovae driven model in Martizzi 2015
         which has a constant entropy. """
 
