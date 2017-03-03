@@ -80,7 +80,7 @@ class DataGridder(object):
         binsy = ((data['Coordinates'][:, 1] - self.ymin)/binsize_y).astype(int)
 
         radii2 = np.sum(np.square(data['Coordinates'][()]), 1)
-        vels = np.sqrt(np.mean(np.square(data['Velocities'][()]), 1)/radii2)
+        vels = np.sqrt(np.sum(np.square(data['Velocities'][()]), 1)/radii2)
 
         if (ids):
             print("WARNING: The ID feature is not implemented")
