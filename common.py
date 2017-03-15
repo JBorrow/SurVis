@@ -173,7 +173,7 @@ if __name__ == "__main__":
     from functools import partial
 
     # Physics Setup
-    bbox_x = [-100, 100]
+    bbox_x = [-30, 30]
     bbox_y = bbox_x
     res_elem = 0.5
     res = survis.helper.get_res(res_elem, bbox_x, bbox_y)
