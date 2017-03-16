@@ -59,7 +59,7 @@ def processing_run(filename, res, bbox_x, bbox_y, elem_size, callback=None):
                                                   smoothing,
                                                   bbox_x[1])
 
-    n_part_r, bins = survis.helper.n_particles_bins(DG)
+    n_part_r, bins = survis.helper.n_particles_bins(data_grid)
 
     if not (callback is None):
         callback()
