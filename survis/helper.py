@@ -56,7 +56,7 @@ def n_particles_bins(DG, bins=[0, 0.5, 3, 10, 100]):
     """ Finds the number of particles within the bin radii, useful for seeing
         how the disk stabalises (does it transport mass into the centre?) """
     radii = fid.rss(DG.gas['Coordinates'][()])
-    hist, bin_edges = np.hist(radii, bins)
+    hist, bin_edges = np.histogram(radii, bins)
 
     return hist, bin_edges
 
