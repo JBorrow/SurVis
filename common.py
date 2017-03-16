@@ -134,11 +134,11 @@ def n_part_r_plot(n_r, bin_edges):
     fig, ax = plt.subplots()
 
     for index, dataset in enumerate(n_r):
-        label = "{} $\leq r <$ {}".format(bin_edges[i], bin_edges[i+1]) 
+        label = "{} $\leq r <$ {}".format(bin_edges[index], bin_edges[index+1]) 
         ax.plot(range(n_snaps), dataset, label=label)
 
     ax.set_xlabel("Snapshot number")
-    ax.set_xlims(0, n_snaps)
+    ax.set_xlim(0, n_snaps)
     ax.set_ylabel("Number of particles within bounds")
 
     ax.legend()
@@ -154,8 +154,8 @@ def make_plots(result, make_movies=True, show_plots=False):
     Q_r = result.T[2]
     sd_r = np.array([np.array(x) for x in result.T[3]]).T
     Q_variation_with_r = result.T[4]
-    n_part_r = result.T[5]
-    bin_edges = result.T[6]
+    n_part_r = np.array([np.array(x) for x in result.T[5]]).T
+    bin_edges = result.T[6][0]
     # We have to manually convert the lists here from when they get pickled
     sd_r_gas = sd_r[0, :]
     sd_r_star = sd_r[1, :]
