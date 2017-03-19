@@ -4,15 +4,42 @@
     It is useful to compare these to the local Jeans' length to check if
     the assumption of Schaye 2001 is valid. """
 
+import survis.fiducial as fid
+import numpy as np
 
-def radial_profile(DG):
+from scipy.optimize import curve_fit
+
+
+def bin_cent(bins):
+    """ We get bin edges from our histogramming, to plot we want
+        the centers of the bins! """
+    return 0.5*(bins[1:] + bins[:-1])
+
+
+def radial_profile(DG, bin_width=0.4):
     """ Takes the data grid for a galaxy and fits the profile radially.
         Expects an exponential surface density profile."""
-    return 0
+    radii = fid.rss(DG.gas_data['Coordinates'][()])
+
+    n, bins = np.histogram(radii, bin_width)
+    bincenters = bin_cent(bins)
+
+    def to_fit(r, norm, R):
+        return r*norm*np.exp(-r/R)
+
+    return curve_fit(to_fit, bincenters, n)    
 
 
-def vertical_profile(DG):
-    return 0
+def vertical_profile(DG, bin_width=0.2):
+    z = DG.gas_data['Coordiinates'][:, 2]
+
+    n, bins = np.histogram(z, bin_width)
+    bincenters = bin_cent(bins)
+
+    def to_fit(z, norm, Z):
+        return norm*(1/(np.cosh(z/Z)**2))
+
+    return curve_fit(to_fit, bincenters, n)
 
 
 def local_jeans_length(DG):
