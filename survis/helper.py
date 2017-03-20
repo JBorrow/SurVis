@@ -50,3 +50,16 @@ def toomre_Q_r(DG, sound, res_elem, max_radius):
         toomre_Q.append(fid.toomre_Q_gas(DG, rad, res_elem, sound))
 
     return toomre_Q
+
+
+def sd_r(DG, res_elem, max_radius):
+    """ Plots the surface density as a function of R using
+        fiducial.surface_density. """
+    # Yes, this is very slow.
+    radii = np.arange(res_elem, max_radius, res_elem)
+    sd = []
+
+    for rad in radii:
+        sd.append(fid.surface_density(DG, rad, res_elem))
+
+    return sd

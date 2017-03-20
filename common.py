@@ -53,16 +53,19 @@ def processing_run(filename, res, bbox_x, bbox_y, elem_size, callback=None):
                                        smoothing,
                                        survis.toomre.sound_speed_sne)
 
-                                       # Now the values for all radii
+    # Now the values for all radii
     Q_variation_with_r = survis.helper.toomre_Q_r(data_grid,
                                                   survis.toomre.sound_speed_sne,
                                                   smoothing,
                                                   bbox_x[1])
 
+    sd_variation_with_r = survis.helper.sd_r(data_grid,
+                                             smoothing, bbox_x[1])
+
     if not (callback is None):
         callback()
 
-    return Q_map, sd_map, Q_r, sd_r, Q_variation_with_r, filename[9:12]
+    return Q_map, sd_map, Q_r, sd_r, Q_variation_with_r, sd_variation_with_r, filename[9:12]
 
 
 def get_snaps(directory = "."):
@@ -106,7 +109,8 @@ def make_linear_plot_movie(data, ylabel, ymin=0, ymax=0):
         images.append(ax.plot(xs, item, 'b-'))
 
     plt.xlim([0, 100*smoothing])
-    plt.ylim([0, 1.5])
+    if not (ymin == ymax):
+        plt.ylim([ymin, ymax])
 
     return animation.ArtistAnimation(fig, images, interval=50, repeat_delay=3000,
                                      blit=True)
@@ -134,6 +138,7 @@ def make_plots(result, make_movies=True, show_plots=False):
     Q_r = result.T[2]
     sd_r = np.array([np.array(x) for x in result.T[3]]).T
     Q_variation_with_r = result.T[4]
+    sd_variation_with_r = result.T[5]
     # We have to manually convert the lists here from when they get pickled
     sd_r_gas = sd_r[0, :]
     sd_r_star = sd_r[1, :]
@@ -155,12 +160,14 @@ def make_plots(result, make_movies=True, show_plots=False):
     if make_movies:
         Q_movie = make_movie_imshow(Q_maps, vmin=0, vmax=2)
         sd_movie = make_movie_imshow(sd_maps, vmin=0, vmax=50)
-        Q_of_r_mov = make_linear_plot_movie(Q_variation_with_r, "Q")
+        Q_of_r_mov = make_linear_plot_movie(Q_variation_with_r, "Q", 0, 1.5)
+        sd_of_r_mov = make_linear_plot_movie(sd_variation_with_r, "Surface Density [$M_\odot$ kpc%$^{-2}]", 0, 1e7)
 
         print("Writing movies (this can take some time and we cannot get progress)")
         Q_movie.save('Q_movie.mp4')
         sd_movie.save('sd_movie.mp4')
         Q_of_r_mov.save('Q_of_r_mov.mp4')
+        sd_of_r_mov.save('sd_of_r_mov.mp4')
 
 
 if __name__ == "__main__":
