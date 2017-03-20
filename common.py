@@ -62,10 +62,12 @@ def processing_run(filename, res, bbox_x, bbox_y, elem_size, callback=None):
     sd_variation_with_r = survis.helper.sd_r(data_grid,
                                              smoothing, bbox_x[1])
 
+    n_part_r, bins = survis.helper.n_particles_bins(data_grid)
+
     if not (callback is None):
         callback()
 
-    return Q_map, sd_map, Q_r, sd_r, Q_variation_with_r, sd_variation_with_r, filename[9:12]
+    return Q_map, sd_map, Q_r, sd_r, Q_variation_with_r, n_part_r, bins, sd_variation_with_r, filename[9:12]
 
 
 def get_snaps(directory = "."):
@@ -131,6 +133,24 @@ def make_linear_plot(data, ylabel, ymin=0, ymax=5.):
     return fig, ax
 
 
+def n_part_r_plot(n_r, bin_edges):
+    n_snaps = len(n_r[0, :])
+    fig, ax = plt.subplots()
+
+    for index, dataset in enumerate(n_r):
+        label = "{} $\leq r <$ {}".format(bin_edges[index], bin_edges[index+1]) 
+        ax.plot(range(n_snaps), dataset, label=label)
+
+    ax.set_xlabel("Snapshot number")
+    ax.set_xlim(0, n_snaps)
+    ax.set_ylabel("Number of particles within bounds")
+
+    ax.legend()
+
+    return fig, ax
+
+
+
 def make_plots(result, make_movies=True, show_plots=False):
     result = np.array(result)
     Q_maps = result.T[0]
@@ -138,23 +158,28 @@ def make_plots(result, make_movies=True, show_plots=False):
     Q_r = result.T[2]
     sd_r = np.array([np.array(x) for x in result.T[3]]).T
     Q_variation_with_r = result.T[4]
-    sd_variation_with_r = result.T[5]
+    n_part_r = np.array([np.array(x) for x in result.T[5]]).T
+    bin_edges = result.T[6][0]
+    sd_variation_with_r = result.T[7]
     # We have to manually convert the lists here from when they get pickled
     sd_r_gas = sd_r[0, :]
     sd_r_star = sd_r[1, :]
 
     Q_fig, Q_ax = make_linear_plot(Q_r, "Toomre $Q$", 0.5, 3.0)
     sd_fig, sd_ax = make_linear_plot(sd_r_gas, "Surface Density ($M_\odot$ pc$^{-2}$)", 0, 1e5)
+    n_fig, n_ax = n_part_r_plot(n_part_r, bin_edges)
 
     if show_plots:
         Q_fig.show()
         sd_fig.show()
+        n_fig.show()
         print("Showing plots, press any key to continue")
         input()
     else:
         print("Writing plots")
         Q_fig.savefig("Q_fig.pdf")
         sd_fig.savefig("sd_gas.pdf")
+        n_fig.savefig("n_gas.pdf")
 
 
     if make_movies:
@@ -180,7 +205,7 @@ if __name__ == "__main__":
     from functools import partial
 
     # Physics Setup
-    bbox_x = [-100, 100]
+    bbox_x = [-30, 30]
     bbox_y = bbox_x
     res_elem = 0.5
     res = survis.helper.get_res(res_elem, bbox_x, bbox_y)
