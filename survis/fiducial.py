@@ -11,11 +11,13 @@ def rss(x):
     return np.sqrt(np.sum(np.square(x), 1))
 
 
-def surface_density(DG, R, dR):
+def surface_density(DG, R, dR, errors=False):
     """ Takes the DataGrid, some radius R to find the surface density at over
-        some smoothing dR (finds particles within R - dR/2 and R + dR/2) """
+        some smoothing dR (finds particles within R - dR/2 and R + dR/2) 
+        
+        Errors will return the (poisson) error on the value of sd as well """
 
-    def sd_per_type(data, mass):
+    def sd_per_type(data, mass, errors):
         """ Calculates the surface density for a given GADGET dataset and
             particle mass. """
 
@@ -28,11 +30,15 @@ def surface_density(DG, R, dR):
 
         # THIS IS CORRECT.
         area_enclosed = 4 * np.pi * R * dR
+        
+        if errors:
+            sd = m_particles / area_enclosed
+            return sd, sd/np.sqrt(n_particles)
+        else:
+            return m_particles / area_enclosed
 
-        return m_particles / area_enclosed
-
-    sd_gas = sd_per_type(DG.gas, DG.gas_mass)
-    sd_star = sd_per_type(DG.star, DG.star_mass)
+    sd_gas = sd_per_type(DG.gas, DG.gas_mass, errors)
+    sd_star = sd_per_type(DG.star, DG.star_mass, errors)
 
     return [sd_gas, sd_star]
 
