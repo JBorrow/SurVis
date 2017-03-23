@@ -27,7 +27,9 @@ def radial_profile(DG, bin_width=0.4):
     def to_fit(r, norm, R):
         return r*norm*np.exp(-r/R)
 
-    return curve_fit(to_fit, bincenters, n)    
+    popt, pcov = curve_fit(to_fit, bincenters, n)
+
+    return popt[1], np.sqrt(pcov[1,1])
 
 
 def vertical_profile(DG, bin_width=0.2):
@@ -39,7 +41,9 @@ def vertical_profile(DG, bin_width=0.2):
     def to_fit(z, norm, Z):
         return norm*(1/(np.cosh(z/Z)**2))
 
-    return curve_fit(to_fit, bincenters, n)
+    popt, pcov = curve_fit(to_fit, bincenters, n)
+
+    return popt[1], np.sqrt(pcov[1,1])
 
 
 def local_jeans_length(DG):

@@ -64,10 +64,12 @@ def processing_run(filename, res, bbox_x, bbox_y, elem_size, callback=None):
 
     n_part_r, bins = survis.helper.n_particles_bins(data_grid)
 
+    vert_opt, vert_err = survis.profiles.vertical_profile(data_grid)
+
     if not (callback is None):
         callback()
 
-    return Q_map, sd_map, Q_r, sd_r, Q_variation_with_r, n_part_r, bins, sd_variation_with_r, filename[9:12]
+    return Q_map, sd_map, Q_r, sd_r, Q_variation_with_r, n_part_r, bins, sd_variation_with_r, vert_opt, vert_err, filename[9:12]
 
 
 def get_snaps(directory = "."):
@@ -150,6 +152,17 @@ def n_part_r_plot(n_r, bin_edges):
     return fig, ax
 
 
+def variation_with_time(data, errors=0, y_ax_lab="Scale height"):
+    n_snaps = len(data)
+    fig, ax = plt.subplots()
+
+    ax.errorbar(np.arange(n_snaps), data, yerr=errors, fmt="o")
+
+    ax.set_ylabel(y_ax_lab)
+    ax.set_xlim(0, n_snaps)
+
+    return fig, ax
+
 
 def make_plots(result, make_movies=True, show_plots=False):
     result = np.array(result)
@@ -161,6 +174,8 @@ def make_plots(result, make_movies=True, show_plots=False):
     n_part_r = np.array([np.array(x) for x in result.T[5]]).T
     bin_edges = result.T[6][0]
     sd_variation_with_r = result.T[7]
+    vpopt = np.array([np.array(x) for x in result.T[8]]).T
+    vperr = np.array([np.array(x) for x in result.T[9]]).T
     # We have to manually convert the lists here from when they get pickled
     sd_r_gas = sd_r[0, :]
     sd_r_star = sd_r[1, :]
@@ -168,11 +183,13 @@ def make_plots(result, make_movies=True, show_plots=False):
     Q_fig, Q_ax = make_linear_plot(Q_r, "Toomre $Q$", 0.5, 3.0)
     sd_fig, sd_ax = make_linear_plot(sd_r_gas, "Surface Density ($M_\odot$ pc$^{-2}$)", 0, 1e5)
     n_fig, n_ax = n_part_r_plot(n_part_r, bin_edges)
+    v_fig, v_ax = variation_with_time(data, errors=0)
 
     if show_plots:
         Q_fig.show()
         sd_fig.show()
         n_fig.show()
+        v_fig.show()
         print("Showing plots, press any key to continue")
         input()
     else:
@@ -180,6 +197,7 @@ def make_plots(result, make_movies=True, show_plots=False):
         Q_fig.savefig("Q_fig.pdf")
         sd_fig.savefig("sd_gas.pdf")
         n_fig.savefig("n_gas.pdf")
+        v_fig.savefig("v_height.pdf")
 
 
     if make_movies:
