@@ -183,7 +183,7 @@ def make_plots(result, make_movies=True, show_plots=False):
     Q_fig, Q_ax = make_linear_plot(Q_r, "Toomre $Q$", 0.5, 3.0)
     sd_fig, sd_ax = make_linear_plot(sd_r_gas, "Surface Density ($M_\odot$ pc$^{-2}$)", 0, 1e5)
     n_fig, n_ax = n_part_r_plot(n_part_r, bin_edges)
-    v_fig, v_ax = variation_with_time(data, errors=0)
+    v_fig, v_ax = variation_with_time(vpopt, errors=vperr)
 
     if show_plots:
         Q_fig.show()

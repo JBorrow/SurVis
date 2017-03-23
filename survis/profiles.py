@@ -19,7 +19,7 @@ def bin_cent(bins):
 def radial_profile(DG, bin_width=0.4):
     """ Takes the data grid for a galaxy and fits the profile radially.
         Expects an exponential surface density profile."""
-    radii = fid.rss(DG.gas_data['Coordinates'][()])
+    radii = fid.rss(DG.gas['Coordinates'][()])
 
     n, bins = np.histogram(radii, bin_width)
     bincenters = bin_cent(bins)
@@ -32,10 +32,12 @@ def radial_profile(DG, bin_width=0.4):
     return popt[1], np.sqrt(pcov[1,1])
 
 
-def vertical_profile(DG, bin_width=0.2):
-    z = DG.gas_data['Coordiinates'][:, 2]
-
-    n, bins = np.histogram(z, bin_width)
+def vertical_profile(DG, bin_width=0.2, min=-10, max=10):
+    z = DG.gas['Coordinates'][:, 2]
+    
+    bins = np.arange(min, max, bin_width)
+    
+    n, bins = np.histogram(z, bins)
     bincenters = bin_cent(bins)
 
     def to_fit(z, norm, Z):
