@@ -25,51 +25,68 @@ import survis
 solar_radius = 8.  # kpc
 smoothing = 0.2 * 2  # kpc
 
+class CommonDataObject(object):
+    def __init__(self, filename, res, bbox_x, bbox_y, elem_size):
+        self.snapshot = snapshot
+        self.data_grid = survis.preprocess.DataGridder(filename,
+                                                       res[0],
+                                                       res[1],
+                                                       bbox_x[0],
+                                                       bbox_x[1],
+                                                       bbox_y[0],
+                                                       bbox_y[1])
+
+        self.bbox_x = bbox_x
+        self.bbox_y = bbox_y
+
+        self.sound_speed = survis.toomre.sound_speed_sne
+
+        return
+
+
+    def run_analysis(self):
+        self.Q_map = survis.helper.get_toomre_Q(self.data_grid,
+                                                self.sound_speed,
+                                                self.elem_size)
+
+        # Normally the masses of each element are given, we must divide by size
+        # as well as a conversion factor to give Msun / pc^2
+        self.sd_map = self.data_grid.gas_data['masses']/((1e6) * self.elem_size**2)
+
+
+        # Now the values at a given radius
+        self.sd_r = survis.fiducial.surface_density(self.data_grid, solar_radius, smoothing)
+        self.Q_r = survis.fiducial.toomre_Q_gas(self.data_grid,
+                                           solar_radius,
+                                           smoothing,
+                                           self.sound_speed)
+
+        # Now the values for all radii
+        self.Q_variation_with_r = survis.helper.toomre_Q_r(self.data_grid,
+                                                      self.sound_speed,
+                                                      smoothing,
+                                                      self.bbox_x[1])
+
+        self.sd_variation_with_r = survis.helper.sd_r(self.data_grid,
+                                                 smoothing,
+                                                 self.bbox_x[1])
+
+        self.n_part_r, self.bins = survis.helper.n_particles_bins(self.data_grid)
+
+        self.vert_opt, self.vert_err = survis.profiles.vertical_profile(self.data_grid)
+
+        return
+
+        
 def processing_run(filename, res, bbox_x, bbox_y, elem_size, callback=None):
     """ Generates the processed data out of the snapshot """
 
-    data_grid = survis.preprocess.DataGridder(filename,
-                                              res[0],
-                                              res[1],
-                                              bbox_x[0],
-                                              bbox_x[1],
-                                              bbox_y[0],
-                                              bbox_y[1])
-
-    # First we extract the maps
-    Q_map = survis.helper.get_toomre_Q(data_grid,
-                                       survis.toomre.sound_speed_sne,
-                                       elem_size)
-
-    # Normally the masses of each element are given, we must divide by size
-    # as well as a conversion factor to give Msun / pc^2
-    sd_map = data_grid.gas_data['masses']/((1e6) * elem_size**2)
-
-
-    # Now the values at a given radius
-    sd_r = survis.fiducial.surface_density(data_grid, solar_radius, smoothing)
-    Q_r = survis.fiducial.toomre_Q_gas(data_grid,
-                                       solar_radius,
-                                       smoothing,
-                                       survis.toomre.sound_speed_sne)
-
-    # Now the values for all radii
-    Q_variation_with_r = survis.helper.toomre_Q_r(data_grid,
-                                                  survis.toomre.sound_speed_sne,
-                                                  smoothing,
-                                                  bbox_x[1])
-
-    sd_variation_with_r = survis.helper.sd_r(data_grid,
-                                             smoothing, bbox_x[1])
-
-    n_part_r, bins = survis.helper.n_particles_bins(data_grid)
-
-    vert_opt, vert_err = survis.profiles.vertical_profile(data_grid)
+    this_data = CommonDataObject(filename, res, bbox_x, bbox_y, elem_size)
 
     if not (callback is None):
         callback()
 
-    return Q_map, sd_map, Q_r, sd_r, Q_variation_with_r, n_part_r, bins, sd_variation_with_r, vert_opt, vert_err, filename[9:12]
+    return this_data
 
 
 def get_snaps(directory = "."):
