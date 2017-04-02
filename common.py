@@ -26,6 +26,9 @@ solar_radius = 8.  # kpc
 smoothing = 0.2 * 2  # kpc
 
 class CommonDataObject(object):
+    """ This object does each processing run (i.e. it is ran once per snapshot)
+        and replaces the old list-based structure which was a nightmare """
+
     def __init__(self, filename, res, bbox_x, bbox_y, elem_size):
         self.snapshot = snapshot
         self.data_grid = survis.preprocess.DataGridder(filename,
@@ -77,11 +80,54 @@ class CommonDataObject(object):
 
         return
 
+
+class CommonDataExtractor(object):
+    """ This object is used to extract the data back to lists per snapshot.
+        We begin with [CommonDataObject, CommonDataObject, ...] but really
+        we want the actual data items [snap0, snap1, snap2] x N. This does
+        that. """
+
+    def __init__(self, cdo_list):
+        self.cdo_list = cdo_list
+
+        self.Q_map = []
+        self.sd_map = []
+        self.sd_r = []
+        self.Q_r = []
+        self.Q_variation_with_r = []
+        self.sd_variation_with_r = []
+        self.n_part_r = []
+        self.bins = []
+        self.vert_opt = []
+        self.vert_err = []
+
+        self._reshape()
+
+        return
+
+    
+    def _reshape(self):
+        for item in tqdm(self.cdo_list, label="Reshaping data"):
+            self.Q_map.append(item.Q_map)
+            self.sd_map.append(item.sd_map)
+            self.sd_r.append(item.sd_r)
+            self.Q_r.append(item.Q_r)
+            self.Q_variation_with_r.append(item.Q_variation_with_r)
+            self.sd_variation_with_r.append(item.sd_variation_with_r)
+            self.n_part_r.append(item.n_part_r)
+            self.bins.append(item.bins)
+            self.vert_opt.append(item.vert_opt)
+            self.vert_err.append(item.vert_err)
+
+        return
+
+
         
 def processing_run(filename, res, bbox_x, bbox_y, elem_size, callback=None):
     """ Generates the processed data out of the snapshot """
 
     this_data = CommonDataObject(filename, res, bbox_x, bbox_y, elem_size)
+    this_data.run_analysis()
 
     if not (callback is None):
         callback()
@@ -182,25 +228,15 @@ def variation_with_time(data, errors=0, y_ax_lab="Scale height"):
 
 
 def make_plots(result, make_movies=True, show_plots=False):
-    result = np.array(result)
-    Q_maps = result.T[0]
-    sd_maps = result.T[1]
-    Q_r = result.T[2]
-    sd_r = np.array([np.array(x) for x in result.T[3]]).T
-    Q_variation_with_r = result.T[4]
-    n_part_r = np.array([np.array(x) for x in result.T[5]]).T
-    bin_edges = result.T[6][0]
-    sd_variation_with_r = result.T[7]
-    vpopt = np.array([np.array(x) for x in result.T[8]]).T
-    vperr = np.array([np.array(x) for x in result.T[9]]).T
-    # We have to manually convert the lists here from when they get pickled
-    sd_r_gas = sd_r[0, :]
-    sd_r_star = sd_r[1, :]
+    result = CommonDataExtractor(result)
 
-    Q_fig, Q_ax = make_linear_plot(Q_r, "Toomre $Q$", 0.5, 3.0)
+    sd_r_gas = reuslt.sd_r[0, :]
+    sd_r_star = result.sd_r[1, :]
+
+    Q_fig, Q_ax = make_linear_plot(result.Q_r, "Toomre $Q$", 0.5, 3.0)
     sd_fig, sd_ax = make_linear_plot(sd_r_gas, "Surface Density ($M_\odot$ pc$^{-2}$)", 0, 1e5)
-    n_fig, n_ax = n_part_r_plot(n_part_r, bin_edges)
-    v_fig, v_ax = variation_with_time(vpopt, errors=vperr)
+    n_fig, n_ax = n_part_r_plot(result.n_part_r, result.bin_edges)
+    v_fig, v_ax = variation_with_time(result.vpopt, errors=result.vperr)
 
     if show_plots:
         Q_fig.show()
@@ -218,10 +254,10 @@ def make_plots(result, make_movies=True, show_plots=False):
 
 
     if make_movies:
-        Q_movie = make_movie_imshow(Q_maps, vmin=0, vmax=2)
-        sd_movie = make_movie_imshow(sd_maps, vmin=0, vmax=50)
-        Q_of_r_mov = make_linear_plot_movie(Q_variation_with_r, "Q", 0, 1.5)
-        sd_of_r_mov = make_linear_plot_movie(sd_variation_with_r, "Surface Density [$M_\odot$ kpc%$^{-2}]", 0, 1e7)
+        Q_movie = make_movie_imshow(result.Q_map, vmin=0, vmax=2)
+        sd_movie = make_movie_imshow(result.sd_map, vmin=0, vmax=50)
+        Q_of_r_mov = make_linear_plot_movie(result.Q_variation_with_r, "Q", 0, 1.5)
+        sd_of_r_mov = make_linear_plot_movie(result.sd_variation_with_r, "Surface Density [$M_\odot$ kpc%$^{-2}]", 0, 1e7)
 
         print("Writing movies (this can take some time and we cannot get progress)")
         Q_movie.save('Q_movie.mp4')
