@@ -110,7 +110,7 @@ class CommonDataExtractor(object):
 
     
     def _reshape(self):
-        for item in tqdm(self.cdo_list, label="Reshaping data"):
+        for item in tqdm(self.cdo_list, desc="Reshaping data"):
             self.Q_map.append(item.Q_map)
             self.sd_map.append(item.sd_map)
             self.sd_r.append(item.sd_r)
