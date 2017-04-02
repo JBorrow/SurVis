@@ -106,7 +106,16 @@ class CommonDataExtractor(object):
 
         self._reshape()
 
+        self.sd_r = self.clean(self.sd_r)
+        self.Q_r = self.clean(self.Q_r)
+        self.n_part_r = self.clean(self.n_part_r)
+
         return
+
+    
+    def clean(self, my_list):
+        """ Some lists turn up in a bad shape. This cleans them """
+        return np.array([np.array(x) for x in my_list])
 
     
     def _reshape(self):
@@ -233,13 +242,13 @@ def variation_with_time(data, errors=0, y_ax_lab="Scale height"):
 def make_plots(result, make_movies=True, show_plots=False):
     result = CommonDataExtractor(result)
 
-    sd_r_gas = reuslt.sd_r[0, :]
+    sd_r_gas = result.sd_r[0, :]
     sd_r_star = result.sd_r[1, :]
 
     Q_fig, Q_ax = make_linear_plot(result.Q_r, "Toomre $Q$", 0.5, 3.0)
     sd_fig, sd_ax = make_linear_plot(sd_r_gas, "Surface Density ($M_\odot$ pc$^{-2}$)", 0, 1e5)
-    n_fig, n_ax = n_part_r_plot(result.n_part_r, result.bin_edges)
-    v_fig, v_ax = variation_with_time(result.vpopt, errors=result.vperr)
+    n_fig, n_ax = n_part_r_plot(result.n_part_r.T, result.bins[0])  # We get bins n_snaps times
+    v_fig, v_ax = variation_with_time(result.vert_opt, errors=result.vert_err)
 
     if show_plots:
         Q_fig.show()
