@@ -30,17 +30,12 @@ class CommonDataObject(object):
         and replaces the old list-based structure which was a nightmare """
 
     def __init__(self, filename, res, bbox_x, bbox_y, elem_size):
-        self.snapshot = snapshot
-        self.data_grid = survis.preprocess.DataGridder(filename,
-                                                       res[0],
-                                                       res[1],
-                                                       bbox_x[0],
-                                                       bbox_x[1],
-                                                       bbox_y[0],
-                                                       bbox_y[1])
+        self.filename = filename
 
+        self.res = res
         self.bbox_x = bbox_x
         self.bbox_y = bbox_y
+        self.elem_size = elem_size
 
         self.sound_speed = survis.toomre.sound_speed_sne
 
@@ -48,35 +43,43 @@ class CommonDataObject(object):
 
 
     def run_analysis(self):
-        self.Q_map = survis.helper.get_toomre_Q(self.data_grid,
+        data_grid = survis.preprocess.DataGridder(self.filename,
+                                                       self.res[0],
+                                                       self.res[1],
+                                                       self.bbox_x[0],
+                                                       self.bbox_x[1],
+                                                       self.bbox_y[0],
+                                                       self.bbox_y[1])
+
+        self.Q_map = survis.helper.get_toomre_Q(data_grid,
                                                 self.sound_speed,
                                                 self.elem_size)
 
         # Normally the masses of each element are given, we must divide by size
         # as well as a conversion factor to give Msun / pc^2
-        self.sd_map = self.data_grid.gas_data['masses']/((1e6) * self.elem_size**2)
+        self.sd_map = data_grid.gas_data['masses']/((1e6) * self.elem_size**2)
 
 
         # Now the values at a given radius
-        self.sd_r = survis.fiducial.surface_density(self.data_grid, solar_radius, smoothing)
-        self.Q_r = survis.fiducial.toomre_Q_gas(self.data_grid,
+        self.sd_r = survis.fiducial.surface_density(data_grid, solar_radius, smoothing)
+        self.Q_r = survis.fiducial.toomre_Q_gas(data_grid,
                                            solar_radius,
                                            smoothing,
                                            self.sound_speed)
 
         # Now the values for all radii
-        self.Q_variation_with_r = survis.helper.toomre_Q_r(self.data_grid,
+        self.Q_variation_with_r = survis.helper.toomre_Q_r(data_grid,
                                                       self.sound_speed,
                                                       smoothing,
                                                       self.bbox_x[1])
 
-        self.sd_variation_with_r = survis.helper.sd_r(self.data_grid,
+        self.sd_variation_with_r = survis.helper.sd_r(data_grid,
                                                  smoothing,
                                                  self.bbox_x[1])
 
-        self.n_part_r, self.bins = survis.helper.n_particles_bins(self.data_grid)
+        self.n_part_r, self.bins = survis.helper.n_particles_bins(data_grid)
 
-        self.vert_opt, self.vert_err = survis.profiles.vertical_profile(self.data_grid)
+        self.vert_opt, self.vert_err = survis.profiles.vertical_profile(data_grid)
 
         return
 
