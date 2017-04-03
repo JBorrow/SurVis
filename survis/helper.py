@@ -33,7 +33,8 @@ def get_toomre_Q(DG, sound, res_elem):
     gas_v = DG.gas_data['velocities']  # note this is actually v/r
     gas_d = DG.gas_data['densities']
 
-    gas_q = toom.Q_gas(sound, gas_v, gas_d, gas_sd + star_sd)
+    # Surface density reasoning see 1503.07873v1
+    gas_q = toom.Q_gas(sound, gas_v, gas_d, gas_sd + (2./3.)*star_sd)
 
     # now the sections with no particles must be masked
 
