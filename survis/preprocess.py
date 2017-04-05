@@ -109,7 +109,7 @@ class DataGridder(object):
 
         # To prevent divide by 0 errors, we will have 0 velocity anyway
         n_arr[n_arr == 0] = 1
-        vel_arr = vel_arr/n_arr
+        vel_arr = np.sqrt(2) * vel_arr/n_arr
 
         if (hydro):
             d_arr = d_arr/n_arr

@@ -56,8 +56,10 @@ def toomre_Q_gas(DG, R, dR, sound_speed=sound_speed, G=4.302e-6):
     vels = np.mean(rss(np.ma.array(data['Velocities'][()], mask=vector_mask)))
     densities = np.mean(np.ma.array(data['Density'], mask=radii_mask))
 
-    surf_dens = sum(surface_density(DG, R, dR))
+    surf_dens_by_type = surface_density(DG, R, dR)
+    # For the following reasoning, see Livermore 1503.07873v1
+    surf_dens = surf_dens_by_type[0] + (2./3.)*surf_dens_by_type[1]
 
-    Q = (sound_speed(densities) * (vels/R))/(np.pi * G * surf_dens)
+    Q = (sound_speed(densities) * np.sqrt(2)* (vels/R))/(np.pi * G * surf_dens)
 
     return Q
