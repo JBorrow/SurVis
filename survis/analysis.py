@@ -16,19 +16,22 @@ class CommonDataObject(object):
         self.bbox_y = bbox_y
         self.elem_size = elem_size
 
+        # These may be modified later on before running analysis
         self.sound_speed = survis.toomre.sound_speed_sne
+        self.solar_radius = 8
+        self.smoothing = 0.4
 
         return
 
 
     def run_analysis(self):
         data_grid = survis.preprocess.DataGridder(self.filename,
-                                                       self.res[0],
-                                                       self.res[1],
-                                                       self.bbox_x[0],
-                                                       self.bbox_x[1],
-                                                       self.bbox_y[0],
-                                                       self.bbox_y[1])
+                                                  self.res[0],
+                                                  self.res[1],
+                                                  self.bbox_x[0],
+                                                  self.bbox_x[1],
+                                                  self.bbox_y[0],
+                                                  self.bbox_y[1])
 
         self.Q_map = survis.helper.get_toomre_Q(data_grid,
                                                 self.sound_speed,
@@ -40,21 +43,23 @@ class CommonDataObject(object):
 
 
         # Now the values at a given radius
-        self.sd_r = survis.fiducial.surface_density(data_grid, solar_radius, smoothing)
+        self.sd_r = survis.fiducial.surface_density(data_grid,
+                                                    self.solar_radius,
+                                                    self.smoothing)
         self.Q_r = survis.fiducial.toomre_Q_gas(data_grid,
-                                           solar_radius,
-                                           smoothing,
-                                           self.sound_speed)
+                                                self.solar_radius,
+                                                self.smoothing,
+                                                self.sound_speed)
 
         # Now the values for all radii
         self.Q_variation_with_r = survis.helper.toomre_Q_r(data_grid,
-                                                      self.sound_speed,
-                                                      smoothing,
-                                                      self.bbox_x[1])
+                                                           self.sound_speed,
+                                                           smoothing,
+                                                           self.bbox_x[1])
 
         self.sd_variation_with_r = survis.helper.sd_r(data_grid,
-                                                 smoothing,
-                                                 self.bbox_x[1])
+                                                      smoothing,
+                                                      self.bbox_x[1])
 
         self.n_part_r, self.bins = survis.helper.n_particles_bins(data_grid)
 
