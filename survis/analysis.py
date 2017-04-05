@@ -54,11 +54,11 @@ class CommonDataObject(object):
         # Now the values for all radii
         self.Q_variation_with_r = survis.helper.toomre_Q_r(data_grid,
                                                            self.sound_speed,
-                                                           smoothing,
+                                                           self.smoothing,
                                                            self.bbox_x[1])
 
         self.sd_variation_with_r = survis.helper.sd_r(data_grid,
-                                                      smoothing,
+                                                      self.smoothing,
                                                       self.bbox_x[1])
 
         self.n_part_r, self.bins = survis.helper.n_particles_bins(data_grid)
