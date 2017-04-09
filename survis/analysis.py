@@ -3,6 +3,8 @@
 
 import numpy as np
 import survis
+from tqdm import tqdm
+
 
 class CommonDataObject(object):
     """ This object does a processing run and extracts a bunch of information
